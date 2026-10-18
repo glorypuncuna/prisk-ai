@@ -1,5 +1,0 @@
-# 0. User Authentication & Registration
-
-*   **FR-0.1 (Login Requirements):** The system shall provide a secure login interface requiring user authentication via Email address and Password, supported by OAuth 2.0 / OIDC social login providers and password hashing (e.g., Argon2 or bcrypt).
-*   **FR-0.2 (Registration Requirements):** The system shall provide a user registration interface that collects and validates the following required fields: First Name, Last Name, Email address, Phone Number (featuring a selectable Country Code dropdown paired with manual number input), and Password.
-*   **FR-0.3 (RBAC Requirements):** The system shall enforce Role-Based Access Control (RBAC) upon authentication, assigning explicit user roles and access boundaries (e.g., Manager, Adjudicator, External Stakeholder).
