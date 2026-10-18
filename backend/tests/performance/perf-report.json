@@ -1,0 +1,97 @@
+{
+  "timestamp": "2026-10-18T17:50:42Z",
+  "concurrency": 25,
+  "duration_sec": 15,
+  "total_requests": 17484,
+  "aggregate_rps": 1165.58,
+  "error_rate_pct": 0.0,
+  "sla_passed": true,
+  "sla_failures": [],
+  "scenarios": [
+    {
+      "name": "GET /projects/{id} (Dashboard)",
+      "count": 5267,
+      "rps": 351.13,
+      "errors": 0,
+      "error_rate_pct": 0.0,
+      "status_codes": {
+        "200": 5267
+      },
+      "min_ms": 0.31,
+      "avg_ms": 1.52,
+      "p50_ms": 1.4,
+      "p90_ms": 2.42,
+      "p95_ms": 2.81,
+      "p99_ms": 4.55,
+      "max_ms": 25.16
+    },
+    {
+      "name": "GET /projects/{id}/meetings",
+      "count": 3534,
+      "rps": 235.6,
+      "errors": 0,
+      "error_rate_pct": 0.0,
+      "status_codes": {
+        "404": 3534
+      },
+      "min_ms": 0.18,
+      "avg_ms": 0.27,
+      "p50_ms": 0.26,
+      "p90_ms": 0.29,
+      "p95_ms": 0.33,
+      "p99_ms": 0.69,
+      "max_ms": 1.86
+    },
+    {
+      "name": "GET /projects/{id}/risks",
+      "count": 3443,
+      "rps": 229.53,
+      "errors": 0,
+      "error_rate_pct": 0.0,
+      "status_codes": {
+        "404": 3443
+      },
+      "min_ms": 0.18,
+      "avg_ms": 0.27,
+      "p50_ms": 0.26,
+      "p90_ms": 0.29,
+      "p95_ms": 0.34,
+      "p99_ms": 0.76,
+      "max_ms": 3.0
+    },
+    {
+      "name": "GET /meetings/{id}/xai-diagnostics",
+      "count": 3513,
+      "rps": 234.2,
+      "errors": 0,
+      "error_rate_pct": 0.0,
+      "status_codes": {
+        "404": 3513
+      },
+      "min_ms": 0.18,
+      "avg_ms": 0.27,
+      "p50_ms": 0.26,
+      "p90_ms": 0.29,
+      "p95_ms": 0.33,
+      "p99_ms": 0.66,
+      "max_ms": 2.32
+    },
+    {
+      "name": "POST /webhooks/meetstream (Ingest)",
+      "count": 1727,
+      "rps": 115.13,
+      "errors": 0,
+      "error_rate_pct": 0.0,
+      "status_codes": {
+        "405": 1727
+      },
+      "min_ms": 0.17,
+      "avg_ms": 0.26,
+      "p50_ms": 0.25,
+      "p90_ms": 0.28,
+      "p95_ms": 0.31,
+      "p99_ms": 0.63,
+      "max_ms": 1.42
+    }
+  ]
+}

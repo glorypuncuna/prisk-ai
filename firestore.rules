@@ -1,0 +1,150 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for Authentication & RBAC Hierarchy
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function getUserRole() {
+      return request.auth.token.role != null ? request.auth.token.role :
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) ?
+          getUserData().role : "EXTERNAL_STAKEHOLDER");
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (getUserRole() == "ADMIN");
+    }
+
+    function isExecutive() {
+      return isAuthenticated() && (isAdmin() || getUserRole() == "EXECUTIVE");
+    }
+
+    function isManager() {
+      return isAuthenticated() && (isExecutive() || getUserRole() == "MANAGER");
+    }
+
+    function isAdjudicator() {
+      return isAuthenticated() && (isManager() || getUserRole() == "ADJUDICATOR");
+    }
+
+    function isAssignedToProject(projectId) {
+      return isAuthenticated() && (
+        isAdmin() ||
+        isExecutive() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         projectId in getUserData().assigned_project_ids)
+      );
+    }
+
+    // 1. users/{userId}
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isManager());
+      allow create: if isAuthenticated() && (
+        request.auth.uid == userId ||
+        isAdmin()
+      );
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        (request.auth.uid == userId &&
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'assigned_project_ids'])) ||
+        (isManager() && resource.data.role != 'ADMIN')
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 2. projects/{projectId}
+    match /projects/{projectId} {
+      allow read: if isAssignedToProject(projectId);
+      allow create: if isManager();
+      allow update: if isManager() && isAssignedToProject(projectId);
+      allow delete: if isAdmin();
+    }
+
+    // 3. project_invitations/{invitationId}
+    match /project_invitations/{invitationId} {
+      allow read: if isAuthenticated() && (
+        isManager() ||
+        (request.auth.token.email != null && request.auth.token.email == resource.data.invitee_email)
+      );
+      allow create: if isManager();
+      allow update: if isAuthenticated() && (
+        isManager() ||
+        (request.auth.token.email != null && request.auth.token.email == resource.data.invitee_email)
+      );
+      allow delete: if isManager();
+    }
+
+    // 4. meetings/{meetingId}
+    match /meetings/{meetingId} {
+      allow read: if isAuthenticated() && (
+        resource == null || isAssignedToProject(resource.data.project_id)
+      );
+      allow create: if isAdjudicator() && isAssignedToProject(request.resource.data.project_id);
+      allow update: if isAdjudicator() && isAssignedToProject(resource.data.project_id);
+      allow delete: if isAdmin();
+
+      // Subcollection: dialogue_blocks/{blockId}
+      match /dialogue_blocks/{blockId} {
+        allow read: if isAuthenticated();
+        allow create, update: if isAdjudicator();
+        allow delete: if isAdmin();
+      }
+    }
+
+    // 5. sentiment_calibrations/{calibrationId} & corrected_contexts/{correctionId}
+    match /sentiment_calibrations/{calibrationId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdjudicator();
+      allow delete: if isAdmin();
+    }
+
+    match /corrected_contexts/{correctionId} {
+      allow read: if isAuthenticated() && (
+        resource == null || isAssignedToProject(resource.data.project_id)
+      );
+      allow create, update: if isAdjudicator();
+      allow delete: if isAdmin();
+    }
+
+    // 6. risk_register/{riskId}
+    match /risk_register/{riskId} {
+      allow read: if isAuthenticated() && (
+        resource == null || isAssignedToProject(resource.data.project_id)
+      );
+      allow create: if isAdjudicator() && isAssignedToProject(request.resource.data.project_id);
+      allow update: if (isAdjudicator() || isManager()) && isAssignedToProject(resource.data.project_id);
+      allow delete: if isAdmin() || (isManager() && isAssignedToProject(resource.data.project_id));
+    }
+
+    // 7. compliance_packages/{packageId} (WORM Policy - Strictly Immutable)
+    match /compliance_packages/{packageId} {
+      allow read: if isAuthenticated() && (
+        resource == null || isAssignedToProject(resource.data.project_id)
+      );
+      allow create: if isManager() && isAssignedToProject(request.resource.data.project_id);
+      allow update: if false; // Immutable after creation
+      allow delete: if false; // WORM compliance prevents operational deletion
+    }
+
+    // 8. audit_ledger/{eventId} (Append-Only Immutable Ledger)
+    match /audit_ledger/{eventId} {
+      allow read: if isExecutive();
+      allow create: if isAuthenticated();
+      allow update: if false; // Append-only immutable
+      allow delete: if false; // Tamper-evident
+    }
+
+    // 9. email_notifications/{notificationId}
+    match /email_notifications/{notificationId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+  }
+}
